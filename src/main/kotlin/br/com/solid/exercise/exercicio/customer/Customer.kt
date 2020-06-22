@@ -1,15 +1,22 @@
 package br.com.solid.exercise.exercicio.customer
 
+import br.com.solid.exercise.exercicio.customer.address.Address
+import br.com.solid.exercise.exercicio.customer.exceptions.CustomerUnderageException
 import br.com.solid.exercise.exercicio.customer.exceptions.InvalidPhoneNumberException
 import br.com.solid.exercise.exercicio.customer.exceptions.PhoneNumberQuantityException
 import br.com.solid.exercise.exercicio.customer.exceptions.UniquePhoneNumbersException
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter.ISO_DATE
 
-data class Customer (
+data class Customer(
     val name: String,
     val cpf: String,
+    val cnh: String,
     val email: String,
     val cityOfBirth: String,
-    val phoneNumbers: List<PhoneNumber>
+    val phoneNumbers: List<PhoneNumber>,
+    val birthDate: BirthDate,
+    val address: Address
 ) {
 
     companion object {
@@ -25,7 +32,10 @@ data class Customer (
         name = name,
         cpf = cpf,
         email = email,
-        cityOfBirth = cityOfBirth
+        cnh = cnh,
+        birthDate = birthDate.value,
+        cityOfBirth = cityOfBirth,
+        address = address.toEntity()
     ).also { customerEntity ->
         customerEntity.phoneNumbers = phoneNumbers.map { it.toEntity(customer = customerEntity) }
     }
@@ -49,4 +59,20 @@ data class PhoneNumber (
     fun toEntity(customer: CustomerEntity) = PhoneNumberEntity(alias = alias, number = number).also { it.customer = customer }
 
     private fun validateNumber() = phoneNumberPattern.toRegex().matches(number) || throw InvalidPhoneNumberException()
+}
+
+data class BirthDate(
+    val value: LocalDate
+) {
+    companion object {
+        const val minimumAge = 18
+    }
+
+    init {
+        isNotUnderage()
+    }
+
+    override fun toString(): String = value.format(ISO_DATE)
+
+    private fun isNotUnderage() = (value.until(LocalDate.now())).years > 18  || throw CustomerUnderageException()
 }
