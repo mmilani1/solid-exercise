@@ -2,77 +2,53 @@ package br.com.solid.exercise.exercicio.customer
 
 import br.com.solid.exercise.exercicio.customer.address.Address
 import br.com.solid.exercise.exercicio.customer.exceptions.CustomerUnderageException
-import br.com.solid.exercise.exercicio.customer.exceptions.InvalidPhoneNumberException
 import br.com.solid.exercise.exercicio.customer.exceptions.PhoneNumberQuantityException
 import br.com.solid.exercise.exercicio.customer.exceptions.UniquePhoneNumbersException
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter.ISO_DATE
+import br.com.solid.exercise.exercicio.customer.resources.BirthDate
+import br.com.solid.exercise.exercicio.customer.resources.CPF
+import br.com.solid.exercise.exercicio.customer.resources.Email
+import br.com.solid.exercise.exercicio.customer.resources.PhoneNumber
 
 data class Customer(
     val name: String,
-    val cpf: String,
+    val cpf: CPF,
     val cnh: String,
-    val email: String,
+    val email: Email,
     val cityOfBirth: String,
-    val phoneNumbers: List<PhoneNumber>,
+    private val phoneNumbers: List<PhoneNumber>,
     val birthDate: BirthDate,
     val address: Address
 ) {
+
+    private val _phoneNumbers: MutableList<PhoneNumber> = mutableListOf()
 
     companion object {
         const val MINIMUM_PHONE_NUMBERS = 2
     }
 
     init {
+        phoneNumbers.forEach { addPhoneNumber(it) }
+        isNotUnderage()
         hasMinimumPhoneNumbers()
-        hasUniquePhoneNumbers()
+    }
+
+    fun addPhoneNumber(phoneNumber: PhoneNumber) {
+        if (_phoneNumbers.contains(phoneNumber)) throw UniquePhoneNumbersException()
+        _phoneNumbers.add(phoneNumber)
     }
 
     fun toEntity() = CustomerEntity(
         name = name,
-        cpf = cpf,
-        email = email,
+        cpf = cpf.toString(),
+        email = email.toString(),
         cnh = cnh,
-        birthDate = birthDate.value,
+        birthDate = birthDate.toLocalDate(),
         cityOfBirth = cityOfBirth,
         address = address.toEntity()
     ).also { customerEntity ->
-        customerEntity.phoneNumbers = phoneNumbers.map { it.toEntity(customer = customerEntity) }
+        customerEntity.phoneNumbers = _phoneNumbers.map { it.toEntity(customer = customerEntity) }
     }
 
-    private fun hasMinimumPhoneNumbers() = phoneNumbers.size >= MINIMUM_PHONE_NUMBERS || throw PhoneNumberQuantityException()
-    private fun hasUniquePhoneNumbers() = phoneNumbers.size >= MINIMUM_PHONE_NUMBERS || throw UniquePhoneNumbersException()
-}
-
-data class PhoneNumber (
-    val alias: String?,
-    val number: String
-) {
-    companion object {
-        const val phoneNumberPattern = "\\((\\d{2})\\)(\\d{4,5}\\d{4})"
-    }
-
-    init {
-        validateNumber()
-    }
-
-    fun toEntity(customer: CustomerEntity) = PhoneNumberEntity(alias = alias, number = number).also { it.customer = customer }
-
-    private fun validateNumber() = phoneNumberPattern.toRegex().matches(number) || throw InvalidPhoneNumberException()
-}
-
-data class BirthDate(
-    val value: LocalDate
-) {
-    companion object {
-        const val minimumAge = 18
-    }
-
-    init {
-        isNotUnderage()
-    }
-
-    override fun toString(): String = value.format(ISO_DATE)
-
-    private fun isNotUnderage() = (value.until(LocalDate.now())).years > 18  || throw CustomerUnderageException()
+    private fun isNotUnderage() = birthDate.isUnderage() && throw CustomerUnderageException()
+    private fun hasMinimumPhoneNumbers() = _phoneNumbers.size >= MINIMUM_PHONE_NUMBERS || throw PhoneNumberQuantityException()
 }

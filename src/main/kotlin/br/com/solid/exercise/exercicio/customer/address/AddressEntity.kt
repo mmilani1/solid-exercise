@@ -6,7 +6,7 @@ import javax.persistence.Embeddable
 @Embeddable
 data class AddressEntity(
     @field:Column(name = "street", nullable = false)
-    val street: String ,
+    val street: String,
 
     @field:Column(name = "number", nullable = true)
     val number: String?,

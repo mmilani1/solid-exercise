@@ -1,12 +1,23 @@
 package br.com.solid.exercise.exercicio.customer
 
 import br.com.solid.exercise.exercicio.customer.address.AddressEntity
+import br.com.solid.exercise.exercicio.customer.resources.BirthDate
+import br.com.solid.exercise.exercicio.customer.resources.CPF
+import br.com.solid.exercise.exercicio.customer.resources.Email
+import br.com.solid.exercise.exercicio.customer.resources.PhoneNumber
 import java.time.LocalDate
 import java.util.*
-import javax.persistence.*
 import javax.persistence.CascadeType.ALL
+import javax.persistence.Column
+import javax.persistence.Embedded
+import javax.persistence.Entity
 import javax.persistence.FetchType.LAZY
+import javax.persistence.GeneratedValue
 import javax.persistence.GenerationType.AUTO
+import javax.persistence.Id
+import javax.persistence.ManyToOne
+import javax.persistence.OneToMany
+import javax.persistence.Table
 
 @Entity
 @Table(name = "customer")
@@ -43,12 +54,12 @@ data class CustomerEntity(
 
     fun toDomain() = Customer(
         name = name,
-        cpf = cpf,
-        email = email,
+        cpf = CPF(cpf),
+        email = Email(email),
         cnh = cnh,
         cityOfBirth = cityOfBirth,
-        phoneNumbers = phoneNumbers.map { it.toDomain(this) },
         birthDate = BirthDate(birthDate),
+        phoneNumbers = phoneNumbers.map { it.toDomain() },
         address = address.toDomain()
     )
 }
@@ -71,5 +82,5 @@ data class PhoneNumberEntity(
     @field:ManyToOne(cascade = [ALL], fetch = LAZY)
     lateinit var customer: CustomerEntity
 
-    fun toDomain(customer: CustomerEntity) = PhoneNumber(alias, number)
+    fun toDomain() = PhoneNumber(alias, number)
 }
